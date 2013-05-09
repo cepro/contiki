@@ -26,9 +26,13 @@
 #ifdef RF_TESTING_MASTER
   static struct etimer sendHelloEvent;
   static uint8_t count = 0;
+  const rimeaddr_t rimeaddr_sender = { { 0x00, 0x12, 0x4b, 0x00, 0x01, 0x0e, 0x10, 0xb1 } };
+  const rimeaddr_t rimeaddr_receiver = { { 0x00, 0x12, 0x4b, 0x00, 0x01, 0x0e, 0x05, 0x8a } };
 #endif
 #ifdef RF_TESTING_SLAVE
   static int32_t len;
+  const rimeaddr_t rimeaddr_sender = { { 0x00, 0x12, 0x4b, 0x00, 0x01, 0x0e, 0x05, 0x8a } };
+  const rimeaddr_t rimeaddr_receiver = { { 0x00, 0x12, 0x4b, 0x00, 0x01, 0x0e, 0x10, 0xb1 } };
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -41,13 +45,14 @@ PROCESS_THREAD(serial_lprf_mac_process, ev, data)
 
   PUTSTRING("Serial LPRF MAC\n");
 
+  rimeaddr_set_node_addr(&rimeaddr_sender);
 #ifdef RF_TESTING_MASTER
   PUTSTRING("RF Testing Master\n");
 
   NETSTACK_RADIO.init();
   NETSTACK_RDC.init();
   NETSTACK_MAC.init();
-  etimer_set(&sendHelloEvent, CLOCK_SECOND * 2);
+  etimer_set(&sendHelloEvent, CLOCK_SECOND * 6);
 
   while(1) {
     PROCESS_WAIT_EVENT();
@@ -58,7 +63,7 @@ PROCESS_THREAD(serial_lprf_mac_process, ev, data)
       PUTSTRING("\n");
       packetbuf_clear();
       packetbuf_copyfrom("Hello World", sizeof("Hello World"));
-      packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, &rimeaddr_null);
+      packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, &rimeaddr_receiver);
       NETSTACK_RDC.send(NULL, NULL);
       leds_toggle(LEDS_GREEN);
       etimer_reset(&sendHelloEvent);

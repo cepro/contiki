@@ -25,6 +25,6 @@
 #define VIZTOOL_CONF_ON            0
 #define RIMEADDR_CONF_SIZE         8
 
-#define NETSTACK_CONF_RDC          sicslowmac_driver
+#define NETSTACK_CONF_RDC          contikimac_driver
 
 #endif /* PROJECT_CONF_H_ */
