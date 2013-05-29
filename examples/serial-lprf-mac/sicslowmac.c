@@ -50,6 +50,7 @@
 #include "net/queuebuf.h"
 #include "net/netstack.h"
 #include "lib/random.h"
+#include "serial-lprf-mac.h"
 
 #define DEBUG 0
 
@@ -60,10 +61,6 @@
 #else
 #define PRINTF(...)
 #define PRINTADDR(addr)
-#endif
-
-#ifdef RF_TESTING_SLAVE
-#define PUTSTRING(...) putstring(__VA_ARGS__)
 #endif
 
 /**  \brief The sequence number (0x00 - 0xff) added to the transmitted
@@ -227,13 +224,11 @@ input_packet(void)
     PRINTADDR(packetbuf_addr(PACKETBUF_ADDR_SENDER));
     PRINTADDR(packetbuf_addr(PACKETBUF_ADDR_RECEIVER));
     PRINTF("%u\n", packetbuf_datalen());
-#ifdef RF_TESTING_SLAVE
-    PUTSTRING("Data Received : ");
-    PUTSTRING(packetbuf_dataptr());
-    PUTSTRING("\n");
+#if ((DEVICE_MODE == RF_TESTING_SLAVE) || (DEVICE_MODE == SERIAL_LPRF_MAC))
+		serial_lprf_mac_rf_input();
 #else
-    NETSTACK_MAC.input();
-#endif    
+		NETSTACK_MAC.input();
+#endif
   } else {
     PRINTF("6MAC: failed to parse hdr\n");
   }

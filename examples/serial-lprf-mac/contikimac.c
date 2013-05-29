@@ -50,6 +50,7 @@
 #include "sys/compower.h"
 #include "sys/pt.h"
 #include "sys/rtimer.h"
+#include "serial-lprf-mac.h"
 
 
 #include <string.h>
@@ -1005,8 +1006,11 @@ input_packet(void)
 #endif /* CONTIKIMAC_CONF_COMPOWER */
 
       PRINTDEBUG("contikimac: data (%u)\n", packetbuf_datalen());
-      printf("Data Received : %s\n", packetbuf_dataptr());
-      //NETSTACK_MAC.input();
+#if ((DEVICE_MODE == RF_TESTING_SLAVE) || (DEVICE_MODE == SERIAL_LPRF_MAC))
+			serial_lprf_mac_rf_input();
+#else
+      NETSTACK_MAC.input();
+#endif
       return;
     } else {
       PRINTDEBUG("contikimac: data not for us\n");
