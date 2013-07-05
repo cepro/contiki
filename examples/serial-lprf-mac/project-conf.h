@@ -12,7 +12,6 @@
 #ifndef __PROJECT_CONF_H__
 #define __PROJECT_CONF_H__
 
-#include "debug.h"
 
 #define RF_TESTING_MASTER						1
 #define RF_TESTING_SLAVE						2
@@ -26,9 +25,12 @@
 #define ADC_SENSOR_CONF_ON         0
 #define VIZTOOL_CONF_ON            0
 #define RIMEADDR_CONF_SIZE         8
-#define UART0_CONF_WITH_INPUT	      1
+#define UART0_CONF_ENABLE						1
+#define UART0_CONF_WITH_INPUT				1
+#define UART1_CONF_ENABLE						1
+#define UART1_CONF_WITH_INPUT				1
 #define STARTUP_CONF_VERBOSE				0
 
-#define NETSTACK_CONF_RDC          contikimac_driver
+#define NETSTACK_CONF_RDC          sicslowmac_driver
 
 #endif /* PROJECT_CONF_H_ */

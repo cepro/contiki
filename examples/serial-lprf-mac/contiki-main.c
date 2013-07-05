@@ -14,6 +14,7 @@
 #include "dev/serial-line.h"
 #include "dev/slip.h"
 #include "dev/leds.h"
+#include "dev/uart0.h"
 #include "dev/io-arch.h"
 #include "dev/dma.h"
 #include "dev/cc2530-rf.h"

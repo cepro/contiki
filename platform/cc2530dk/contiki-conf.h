@@ -44,7 +44,12 @@
  */
 #define UART_ON_USART     0
 
+#ifndef UART1_CONF_ENABLE
 #define UART1_CONF_ENABLE 0
+#endif
+#ifndef UART1_CONF_WITH_INPUT
+#define UART1_CONF_WITH_INPUT 0
+#endif
 
 #ifndef UART0_CONF_ENABLE
 #define UART0_CONF_ENABLE  1

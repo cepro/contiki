@@ -16,6 +16,7 @@
 #include "net/netstack.h"
 #include "net/packetbuf.h"
 #include "serial-lprf-mac.h"
+#include "debug.h"
 
 #define DEBUG 1
 #if DEBUG && GLOBAL_DEBUG_ON
@@ -36,7 +37,7 @@
   const rimeaddr_t rimeaddr_receiver = { { 0x00, 0x12, 0x4b, 0x00, 0x01, 0x0e, 0x10, 0xb1 } };
 #else // SERIAL_LPRF_MAC
 	static SerialRecState_e state = SERIAL_REC_STATE_WAIT_FOR_START;
-	static uint8_t pktLength = 0, dataBuffer[30], dataReceived;
+	static uint8_t pktLength = 0, dataBuffer[30], dataReceived, calcRxDataCheckSum;
 	static int32_t len;
 #endif
   int serial_lprf_mac_serial_input(unsigned char c);
@@ -92,6 +93,7 @@ PROCESS_THREAD(serial_lprf_mac_process, ev, data)
     }
   }
 #else // SERIAL_LPRF_MAC
+	uart0_init();
   uart0_set_input(serial_lprf_mac_serial_input);
 	
 	NETSTACK_RADIO.init();
@@ -141,11 +143,13 @@ serial_lprf_mac_serial_input(unsigned char byteReceived)
 			if(byteReceived == SERIAL_LPRF_MAC_PACKET_START_BYTE)
 			{
 				state = SERIAL_REC_STATE_PACKET_START_RECEIVED;
+				calcRxDataCheckSum = 0;
 				//PUTSTRING("Packet start received\n");
 			}
 			break;
 			
 		case SERIAL_REC_STATE_PACKET_START_RECEIVED:
+			calcRxDataCheckSum ^= byteReceived;
 			pktLength = byteReceived;
 			dataReceived = 0;
 			//PUTSTRING("Packet length received\n");
@@ -153,14 +157,24 @@ serial_lprf_mac_serial_input(unsigned char byteReceived)
 			break;
 			
 		case SERIAL_REC_STATE_PACKET_LENGTH_RECEIVED:
+			calcRxDataCheckSum ^= byteReceived;
 			dataBuffer[dataReceived++] = byteReceived;
-			if(dataReceived >= (pktLength - 1))
+			if(dataReceived >= pktLength)
 			{
-				state = SERIAL_REC_STATE_PACKET_COMPLETE;
+				state = SERIAL_REC_STATE_PACKET_CHECKSUM_VALIDATE;
 				//PUTSTRING("Packet complete\n");
 			}
 			break;
-			
+		case SERIAL_REC_STATE_PACKET_CHECKSUM_VALIDATE:
+			if(calcRxDataCheckSum != byteReceived)
+			{
+				state = SERIAL_REC_STATE_WAIT_FOR_START;
+			}
+			else
+			{
+				state = SERIAL_REC_STATE_PACKET_COMPLETE;
+			}
+			break;
 		case SERIAL_REC_STATE_PACKET_COMPLETE:
 			// Wait till packet buffer is empty
 			break;
@@ -176,23 +190,34 @@ serial_lprf_mac_serial_input(unsigned char byteReceived)
 void
 serial_lprf_mac_rf_input(void)
 {
-	uint8_t bufCnt, *bufPtr = packetbuf_dataptr();
+	uint8_t bufCnt, *bufPtr = packetbuf_dataptr(), checkSum = 0;
 #if (DEVICE_MODE == SERIAL_LPRF_MAC)
 	uint8_t *addrPtr;
-#endif
-	
+#endif	
 	PUTSTRING("Data Received : ");
 	PUTSTRING(bufPtr);
 	PUTSTRING("\n");
 	leds_toggle(LEDS_RED);
 #if (DEVICE_MODE == SERIAL_LPRF_MAC)
-	putchar(SERIAL_LPRF_MAC_PACKET_START_BYTE);
-	putchar(packetbuf_datalen() + 1 + 8);
-	putchar('R');
+	uart0_writeb(SERIAL_LPRF_MAC_PACKET_START_BYTE);
+	
+	checkSum ^= (packetbuf_datalen() + 1 + 8);
+	uart0_writeb(packetbuf_datalen() + 1 + 8);
+	
+	checkSum ^= 'R';
+	uart0_writeb('R');
 	addrPtr = (uint8_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER);
 	for(bufCnt = 0; bufCnt < 8; bufCnt++)
-		putchar( * (addrPtr  + bufCnt));
+	{
+		checkSum ^= * (addrPtr  + bufCnt);
+		uart0_writeb( * (addrPtr  + bufCnt));
+	}
 	for(bufCnt = 0; bufCnt < packetbuf_datalen(); bufCnt++)
-		putchar( * (bufPtr + bufCnt));
+	{
+		checkSum ^=  * (bufPtr + bufCnt);
+		uart0_writeb( * (bufPtr + bufCnt));
+	}
+	
+	uart0_writeb(checkSum);
 #endif
 }

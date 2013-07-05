@@ -62,8 +62,8 @@
  */
 #define io_arch_flush() usb_serial_flush()
 #else
-#include "dev/uart0.h"
-#define IO_ARCH_PREFIX uart0
+#include "dev/uart1.h"
+#define IO_ARCH_PREFIX uart1
 #define io_arch_flush()
 #endif
 /*---------------------------------------------------------------------------*/
